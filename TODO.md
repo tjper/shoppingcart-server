@@ -1,11 +1,16 @@
 # TODO
 
 1. Create cli with Viper and Cobra.
+
 2. Create server initialization that utilizes options functions and the
    following dependencies.
    > MySQL
    > Viper
-3. Utilize the Chi router to write REST endpoints that access and manipulate
+
+3. Create MySQL shoppingcart DB schema. Insert multiple items that may be
+   purchased by users.
+
+4. Utilize the Chi router to write REST endpoints that access and manipulate
    the shopping cart resource.
 
    A user may access and modify there cart resource in the following ways...
@@ -17,4 +22,4 @@
    A user may access the items resource in the following ways...
    > get a list of items (GET /items?max_results=:max_results&page_token=:page_token)
 
-4. Write integration tests for between the server and DB layer.
+5. Write integration tests for between the server and DB layer.
