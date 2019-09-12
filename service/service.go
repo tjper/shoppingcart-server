@@ -46,6 +46,7 @@ type ServiceOption func(*Service)
 func WithDB() ServiceOption {
 	return func(svc *Service) {
 		const driver = "mysql"
+		log.Println(svc.Viper.GetString(EnvVarDbConnStr))
 		db, err := sql.Open(driver, svc.Viper.GetString(EnvVarDbConnStr))
 		if err != nil {
 			panic(err)

@@ -3,26 +3,30 @@ package service
 import "github.com/spf13/viper"
 
 const (
+	EnvVarPrefix = "CART"
+	// EnvVarPrefix is the env var prefix for environments specific to this
+	// service.
+
 	// EnvVarHttpPort is the key to an env var that specifies the port the cart
 	// Service will listen on.
-	EnvVarHttpPort = "http_port"
+	EnvVarHttpPort = "HTTP_PORT"
 
 	// EnvVarEnvironment is the key to an env var that specifies the service's
 	// current environment.
-	EnvVarEnvironment = "environment"
+	EnvVarEnvironment = "ENVIRONMENT"
 
 	// EnvVarDbConnStr is the key to an env var that specifies the
 	// database connection string.
-	EnvVarDbConnStr = "db_conn_str"
+	EnvVarDbConnStr = "DB_CONN_STR"
 
 	// EnvVarDbMaxOpenConns is the key to an env var that specifies the
 	// max number open connections in the db connection pool.
-	EnvVarDbMaxOpenConns = "db_max_open_conns"
+	EnvVarDbMaxOpenConns = "DB_MAX_OPEN_CONNS"
 
 	// EnvVarDbMaxIdleConns is the key to an env var that specifies the
 	// possible max number of idle connections in the db connection
 	// pool.
-	EnvVarDbMaxIdleConns = "db_max_idle_conns"
+	EnvVarDbMaxIdleConns = "DB_MAX_IDLE_CONNS"
 )
 
 const (

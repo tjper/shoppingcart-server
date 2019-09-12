@@ -19,8 +19,12 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Running shoppingcart-server...")
 
+		var v = viper.New()
+		v.AutomaticEnv()
+		v.SetEnvPrefix(service.EnvVarPrefix)
+
 		var svc = service.New(
-			service.ViperDefaults(viper.New()),
+			service.ViperDefaults(v),
 			service.WithDB(),
 			service.WithZap(),
 		)
