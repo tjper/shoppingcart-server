@@ -7,11 +7,8 @@ import (
 	"flag"
 	"io"
 	"io/ioutil"
-	"log"
-	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -24,15 +21,10 @@ import (
 
 var golden = flag.Bool("golden", false, "overwrite the existing golden files")
 
-func TestMain(m *testing.M) {
-	ping("localhost:3306", "shoppingcart-db")
-
-	os.Exit(m.Run())
-}
-
 func TestGetItems(t *testing.T) {
-	i := newInject()
-	defer i.Close()
+	t.Parallel()
+	i := newInject(t)
+	defer i.Close(t)
 
 	t.Run("GET items", func(t *testing.T) {
 		var ts = httptest.NewServer(i.Svc.GetItemsHandler())
@@ -55,8 +47,9 @@ func TestGetItems(t *testing.T) {
 }
 
 func TestPostCartItem(t *testing.T) {
-	var i = newInject()
-	defer i.Close()
+	t.Parallel()
+	var i = newInject(t)
+	defer i.Close(t)
 
 	var ts = httptest.NewServer(i.Svc.PostCartItemHandler())
 	defer ts.Close()
@@ -91,8 +84,9 @@ func TestPostCartItem(t *testing.T) {
 }
 
 func TestGetCart(t *testing.T) {
-	var i = newInject()
-	defer i.Close()
+	t.Parallel()
+	var i = newInject(t)
+	defer i.Close(t)
 
 	tests := []struct {
 		Name      string
@@ -157,8 +151,9 @@ func TestGetCart(t *testing.T) {
 }
 
 func TestPutCartItem(t *testing.T) {
-	var i = newInject()
-	defer i.Close()
+	t.Parallel()
+	var i = newInject(t)
+	defer i.Close(t)
 
 	tests := []struct {
 		Name           string
@@ -203,8 +198,9 @@ func TestPutCartItem(t *testing.T) {
 }
 
 func TestDeleteItem(t *testing.T) {
-	var i = newInject()
-	defer i.Close()
+	t.Parallel()
+	var i = newInject(t)
+	defer i.Close(t)
 
 	tests := []struct {
 		Name     string
@@ -234,11 +230,5 @@ func TestDeleteItem(t *testing.T) {
 			i.Svc.DeleteCartItemHandler()(w, r)
 			require.Equal(t, http.StatusOK, w.Result().StatusCode)
 		})
-	}
-}
-
-func ping(addr string, msg string) {
-	if _, err := net.Dial("tcp", addr); err != nil {
-		log.Fatalf("Connection Error [%s]: %s\n", msg, err)
 	}
 }

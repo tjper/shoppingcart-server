@@ -50,17 +50,18 @@ func WithDB() ServiceOption {
 		if err != nil {
 			panic(err)
 		}
+		db.SetMaxOpenConns(svc.Viper.GetInt(EnvVarDbMaxOpenConns))
+		db.SetMaxIdleConns(svc.Viper.GetInt(EnvVarDbMaxIdleConns))
+
 		for {
-			log.Println("Attempting to connect to DB")
+			log.Println("Attempting to connect to DB...")
 			err := db.Ping()
 			if err == nil {
 				log.Println("Connected to DB")
 				svc.DB = db
 				return
 			}
-			log.Printf("Failed to connect to DB\terr = %s\n", err)
-			log.Println("sleeping...")
-			time.Sleep(2 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}
 }
