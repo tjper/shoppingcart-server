@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/tjper/shoppingcart-service/pkg/cart"
+	"github.com/tjper/shoppingcart-server/pkg/cart"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -19,10 +20,12 @@ var serveCmd = &cobra.Command{
 		fmt.Println("Running shoppingcart-server...")
 
 		var cartService = cart.NewService(
-			cart.WithViper(v),
-			cart.WithDB(db),
+			cart.ViperDefaults(viper.New()),
+			cart.WithDB(),
+			cart.WithZap(),
 		)
-		cartService.ListenAndServe()
+		defer cartService.Close()
 
+		cartService.ListenAndServe()
 	},
 }
