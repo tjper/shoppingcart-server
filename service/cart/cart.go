@@ -36,7 +36,7 @@ func (c *Cart) Get(ctx context.Context, db Queryer, userId int64) error {
 	var sql = `
   SELECT id, item_id, user_id, count
   FROM cart
-  WHERE user_id = $1
+  WHERE user_id = ?
   `
 
 	rows, err := db.QueryContext(ctx, sql, userId)
@@ -47,18 +47,18 @@ func (c *Cart) Get(ctx context.Context, db Queryer, userId int64) error {
 
 	var (
 		cartItems = make([]CartItem, 0)
-		cartItem  = new(CartItem)
+		cartItem  CartItem
 	)
 	for rows.Next() {
 		if err := rows.Scan(
-			cartItem.Id,
-			cartItem.ItemId,
-			cartItem.UserId,
-			cartItem.Count,
+			&cartItem.Id,
+			&cartItem.ItemId,
+			&cartItem.UserId,
+			&cartItem.Count,
 		); err != nil {
 			return errors.Wrapf(err, "failed to Cart.Get/Scan\tsql=%s\tuserId=%v", sql, userId)
 		}
-		cartItems = append(cartItems, *cartItem)
+		cartItems = append(cartItems, cartItem)
 	}
 	if err := rows.Err(); err != nil {
 		return errors.Wrapf(err, "failed to Cart.Get/Err\tsql=%s\tuserId=%v", sql, userId)
@@ -81,26 +81,26 @@ func FindCartItem(ctx context.Context, db QueryRower, id int64) (*CartItem, erro
 	var sql = `
   SELECT id, item_id, user_id, count
   FROM cart
-  WHERE id = $1 
+  WHERE id = ?
   `
 
-	var cartItem = new(CartItem)
+	var cartItem CartItem
 	if err := db.QueryRowContext(ctx, sql, id).Scan(
-		cartItem.Id,
-		cartItem.ItemId,
-		cartItem.UserId,
-		cartItem.Count,
+		&cartItem.Id,
+		&cartItem.ItemId,
+		&cartItem.UserId,
+		&cartItem.Count,
 	); err != nil {
 		return nil, errors.Wrapf(err, "failed to FindCartItem\tsql=%s\tid=%v", sql, id)
 	}
-	return cartItem, nil
+	return &cartItem, nil
 }
 
 // Insert adds a cart item to a cart in the db.
 func (i *CartItem) Insert(ctx context.Context, db Execer) error {
 	var sql = `
   INSERT INTO cart (item_id, user_id, count)
-  VALUES ($1, $2, $3)
+  VALUES (?, ?, ?)
   `
 	var args = []interface{}{i.ItemId, i.UserId, i.Count}
 	res, err := db.ExecContext(ctx, sql, args...)
@@ -124,7 +124,7 @@ func DeleteCartItem(ctx context.Context, db ExecQueryer, id int64) error {
 
 	var sql = `
   DELETE FROM cart
-  WHERE id = $1
+  WHERE id = ?
   `
 	if _, err := db.ExecContext(ctx, sql, id); err != nil {
 		return errors.Wrapf(err, "failed to DeleteCartItem/ExecContext\tsql=%s\tid=%v", sql, id)
@@ -141,10 +141,10 @@ func (i CartItem) Update(ctx context.Context, db ExecQueryer) error {
 
 	var sql = `
   UPDATE cart
-  SET item_id = $1 
-      user_id = $2
-      count = $3
-  WHERE id = $4
+  SET item_id = ?,
+      user_id = ?,
+      count = ?
+  WHERE id = ?
   `
 	var args = []interface{}{i.ItemId, i.UserId, i.Count, i.Id}
 	if _, err := db.ExecContext(ctx, sql, args...); err != nil {

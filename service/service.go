@@ -28,7 +28,9 @@ type Service struct {
 
 // NewService initializes a new cart Service via option functions.
 func New(v *viper.Viper, options ...ServiceOption) *Service {
-	var svc = new(Service)
+	var svc = &Service{
+		Viper: v,
+	}
 
 	for _, option := range options {
 		option(svc)

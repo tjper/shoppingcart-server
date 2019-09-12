@@ -37,18 +37,18 @@ func Items(ctx context.Context, db Queryer) ([]Item, error) {
 
 	var (
 		items = make([]Item, 0)
-		item  = new(Item)
+		item  Item
 	)
 	for rows.Next() {
 		if err := rows.Scan(
-			item.Id,
-			item.Name,
-			item.Description,
-			item.Price,
+			&item.Id,
+			&item.Name,
+			&item.Description,
+			&item.Price,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to Items/Scan\tsql=%s", sql)
 		}
-		items = append(items, *item)
+		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, errors.Wrapf(err, "failed to Items/Err\tsql=%s", sql)

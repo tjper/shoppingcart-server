@@ -13,9 +13,9 @@ import (
 // CartRoutes defines the cart resources REST endpoints.
 func (svc *Service) CartRoutes(r chi.Router) {
 	r.Post("/cart/item", svc.PostCartItemHandler())
-	r.Get("/cart/:userId", svc.GetCartHandler())
-	r.Put("/cart/item/:id", svc.PutCartItemHandler())
-	r.Delete("/cart/item/:id", svc.DeleteCartItemHandler())
+	r.Get("/cart/{userId}", svc.GetCartHandler())
+	r.Put("/cart/item/{id}", svc.PutCartItemHandler())
+	r.Delete("/cart/item/{id}", svc.DeleteCartItemHandler())
 }
 
 // PostCreatItemHandler creates a CartItem resource on the service.

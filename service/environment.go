@@ -21,7 +21,7 @@ const (
 	dev  = "dev"
 
 	port    = ":8080"
-	connStr = "user:password@tcp(localhost:5555)/shoppingcart?tls=false"
+	connStr = "admin:password@tcp(localhost:3306)/shoppingcart-db?tls=false"
 )
 
 func ViperDefaults(v *viper.Viper) *viper.Viper {
