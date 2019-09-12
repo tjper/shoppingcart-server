@@ -1,4 +1,4 @@
-package cart
+package service
 
 import (
 	"fmt"

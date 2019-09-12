@@ -30,8 +30,8 @@ type Cart struct {
 	Items []CartItem
 }
 
-// Get retrieves the specified userId's cart from the Queryer. On success, a
-// nil error is returned. On failure, a non nil error is returned.
+// Get retrieves the specified userId's cart from the db. On success, a nil
+// error is returned. On failure, a non nil error is returned.
 func (c *Cart) Get(ctx context.Context, db Queryer, userId int64) error {
 	var sql = `
   SELECT id, item_id, user_id, count
@@ -41,7 +41,7 @@ func (c *Cart) Get(ctx context.Context, db Queryer, userId int64) error {
 
 	rows, err := db.QueryContext(ctx, sql, userId)
 	if err != nil {
-		return errors.Wrapf(err, "failed to Cart.Get/Query\tsql=%s\tuserId=%v", sql, userId)
+		return errors.Wrapf(err, "failed to Cart.Get/QueryContext\tsql=%s\tuserId=%v", sql, userId)
 	}
 	defer rows.Close()
 
@@ -105,7 +105,7 @@ func (i *CartItem) Insert(ctx context.Context, db Execer) error {
 	var args = []interface{}{i.ItemId, i.UserId, i.Count}
 	res, err := db.ExecContext(ctx, sql, args...)
 	if err != nil {
-		return errors.Wrapf(err, "failed to Insert/Exec\tsql=%s\targs=%v", sql, args)
+		return errors.Wrapf(err, "failed to Insert/ExecContext\tsql=%s\targs=%v", sql, args)
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
@@ -127,7 +127,7 @@ func DeleteCartItem(ctx context.Context, db ExecQueryer, id int64) error {
   WHERE id = $1
   `
 	if _, err := db.ExecContext(ctx, sql, id); err != nil {
-		return errors.Wrapf(err, "failed to DeleteCartItem/Exec\tsql=%s\tid=%v", sql, id)
+		return errors.Wrapf(err, "failed to DeleteCartItem/ExecContext\tsql=%s\tid=%v", sql, id)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (i CartItem) Update(ctx context.Context, db ExecQueryer) error {
   `
 	var args = []interface{}{i.ItemId, i.UserId, i.Count, i.Id}
 	if _, err := db.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to Update/Exec\tsql=%s\ti=%v", sql, i)
+		return errors.Wrapf(err, "failed to Update/ExecContext\tsql=%s\ti=%v", sql, i)
 	}
 	return nil
 }

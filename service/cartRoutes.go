@@ -1,22 +1,24 @@
-package cart
+package service
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
 
+	"github.com/tjper/shoppingcart-server/service/cart"
+
 	"github.com/go-chi/chi"
 )
 
-func (svc *Service) Routes(r chi.Router) chi.Router {
+// CartRoutes defines the cart resources REST endpoints.
+func (svc *Service) CartRoutes(r chi.Router) {
 	r.Post("/cart/item", svc.PostCartItemHandler())
 	r.Get("/cart/:userId", svc.GetCartHandler())
 	r.Put("/cart/item/:id", svc.PutCartItemHandler())
 	r.Delete("/cart/item/:id", svc.DeleteCartItemHandler())
-	return r
 }
 
-// PostCreatItemHandler creates a CartItem resource on the cart service.
+// PostCreatItemHandler creates a CartItem resource on the service.
 func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 	type (
 		Request struct {
@@ -25,7 +27,7 @@ func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 			Count  int64 `json:"count"`
 		}
 		Response struct {
-			CartItem CartItem `json:"cartItem"`
+			CartItem cart.CartItem `json:"cartItem"`
 		}
 	)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +49,7 @@ func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 			return
 		}
 
-		var cartItem = &CartItem{
+		var cartItem = &cart.CartItem{
 			ItemId: req.ItemId,
 			UserId: req.UserId,
 			Count:  req.Count,
@@ -68,10 +70,10 @@ func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 	}
 }
 
-// GetCartHandler retrieves a user's cart from the cart service.
+// GetCartHandler retrieves a user's cart from the service.
 func (svc *Service) GetCartHandler() http.HandlerFunc {
 	type Response struct {
-		Cart Cart `json:"cart"`
+		Cart cart.Cart `json:"cart"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +84,7 @@ func (svc *Service) GetCartHandler() http.HandlerFunc {
 			svc.Error(w, err, http.StatusBadRequest)
 		}
 
-		var cart = new(Cart)
+		var cart = new(cart.Cart)
 		if err := cart.Get(ctx, svc.DB, int64(userId)); err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
@@ -97,7 +99,7 @@ func (svc *Service) GetCartHandler() http.HandlerFunc {
 	}
 }
 
-// PutCartItemHandler updates a cart item in the cart service.
+// PutCartItemHandler updates a cart item in the service.
 func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 	type (
 		Request struct {
@@ -106,7 +108,7 @@ func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 			Count  int64 `json:"count"`
 		}
 		Response struct {
-			CartItem CartItem `json:"cartItem"`
+			CartItem cart.CartItem `json:"cartItem"`
 		}
 	)
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -133,7 +135,7 @@ func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 			svc.Error(w, err, http.StatusBadRequest)
 		}
 
-		var cartItem = &CartItem{
+		var cartItem = &cart.CartItem{
 			Id:     int64(id),
 			ItemId: req.ItemId,
 			UserId: req.UserId,
@@ -146,7 +148,7 @@ func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 	}
 }
 
-// DeleteCartItemHandler deletes a cart item from the cart service.
+// DeleteCartItemHandler deletes a cart item from the service.
 func (svc *Service) DeleteCartItemHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var ctx = r.Context()
@@ -156,7 +158,7 @@ func (svc *Service) DeleteCartItemHandler() http.HandlerFunc {
 			return
 		}
 
-		if err := DeleteCartItem(ctx, svc.DB, int64(id)); err != nil {
+		if err := cart.DeleteCartItem(ctx, svc.DB, int64(id)); err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
 		}

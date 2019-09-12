@@ -1,4 +1,4 @@
-package cart
+package service
 
 import (
 	"context"
@@ -18,23 +18,16 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// Info is a typically used to wrap info logs.
-	Info = "[cart INFO]"
-
-	// Error is typically used to warp error logs and/or error types.
-	Error = "[cart ERROR]"
-)
-
 // Service defines all service dependencies.
 type Service struct {
-	Viper *viper.Viper
-	DB    *sql.DB
-	Zap   *zap.Logger
+	Viper  *viper.Viper
+	DB     *sql.DB
+	Zap    *zap.Logger
+	Router chi.Router
 }
 
 // NewService initializes a new cart Service via option functions.
-func NewService(v *viper.Viper, options ...ServiceOption) *Service {
+func New(v *viper.Viper, options ...ServiceOption) *Service {
 	var svc = new(Service)
 
 	for _, option := range options {
@@ -92,6 +85,17 @@ func WithZap() ServiceOption {
 	}
 }
 
+// WithRouter returns a ServiceOption that initializes the Service.Router field.
+func WithRouters(routers ...func(chi.Router)) ServiceOption {
+	return func(svc *Service) {
+		var r = chi.NewRouter()
+		for _, router := range routers {
+			r.Group(router)
+		}
+		svc.Router = r
+	}
+}
+
 // ListenAndServe opens a set of HTTP endpoints as specified by svc.Routes() on
 // the port specified in viper.
 func (svc *Service) ListenAndServe() {
@@ -112,7 +116,7 @@ func (svc *Service) ListenAndServe() {
 
 	if err := http.ListenAndServe(
 		svc.Viper.GetString(EnvVarHttpPort),
-		svc.Routes(chi.NewRouter()),
+		svc.Router,
 	); err != http.ErrServerClosed {
 		svc.Zap.Sugar().Fatal(errors.Wrap(err, "HTTP server ListenAndServe"))
 	}
