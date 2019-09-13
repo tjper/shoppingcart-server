@@ -1,23 +1,37 @@
 package service
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 )
 
-// validateInt64 validates that the val is not empty. On failure, an error
-// is appended to the err argument.
-func validateInt64(err error, field string, val int64) {
-	if val == 0 {
-		var errMsg = fmt.Sprintf(
-			"failed to ValidateInt64\tfield=%s\tval=%v",
-			field,
-			val)
-		if err != nil {
-			err = errors.Wrap(err, errMsg)
-		} else {
-			err = errors.New(errMsg)
+type validate struct {
+	Err error
+}
+
+// validate runs a set of checks in order to ensure the data is as expected.
+func (v *validate) check(field string, checks ...func() error) {
+	for _, check := range checks {
+		if err := check(); err != nil {
+			v.Err = err
+			return
 		}
+	}
+}
+
+func intNotEmpty(val int) func() error {
+	return func() error {
+		if val == 0 {
+			return errors.Errorf("failed to intNotEmpty\tval=%v", val)
+		}
+		return nil
+	}
+}
+
+func intGreaterThan(val int, min int) func() error {
+	return func() error {
+		if val <= min {
+			return errors.Errorf("failed to validateGreaterThan\tval=%v\tmin=%v", val, min)
+		}
+		return nil
 	}
 }

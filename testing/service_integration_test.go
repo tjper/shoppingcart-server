@@ -89,31 +89,31 @@ func TestGetCart(t *testing.T) {
 	defer i.Close(t)
 
 	tests := []struct {
-		Name      string
-		CartItems []cart.CartItem
-		UserId    string
+		Name   string
+		Rels   []cart.UserCartItemRel
+		UserId string
 	}{
 		{
 			Name: "Baseline",
-			CartItems: []cart.CartItem{
-				cart.CartItem{ItemId: 1, UserId: 1, Count: 1},
+			Rels: []cart.UserCartItemRel{
+				cart.UserCartItemRel{ItemId: 1, UserId: 1, Count: 1},
 			},
 			UserId: "1",
 		},
 		{
 			Name: "Two items",
-			CartItems: []cart.CartItem{
-				cart.CartItem{ItemId: 1, UserId: 1, Count: 1},
-				cart.CartItem{ItemId: 2, UserId: 1, Count: 1},
+			Rels: []cart.UserCartItemRel{
+				cart.UserCartItemRel{ItemId: 1, UserId: 1, Count: 1},
+				cart.UserCartItemRel{ItemId: 2, UserId: 1, Count: 1},
 			},
 			UserId: "1",
 		},
 		{
 			Name: "Three items, counts > 1",
-			CartItems: []cart.CartItem{
-				cart.CartItem{ItemId: 1, UserId: 1, Count: 2},
-				cart.CartItem{ItemId: 2, UserId: 1, Count: 1},
-				cart.CartItem{ItemId: 3, UserId: 1, Count: 1},
+			Rels: []cart.UserCartItemRel{
+				cart.UserCartItemRel{ItemId: 1, UserId: 1, Count: 2},
+				cart.UserCartItemRel{ItemId: 2, UserId: 1, Count: 1},
+				cart.UserCartItemRel{ItemId: 3, UserId: 1, Count: 1},
 			},
 			UserId: "1",
 		},
@@ -121,8 +121,11 @@ func TestGetCart(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			for _, cartItem := range test.CartItems {
-				err := cartItem.Insert(context.Background(), i.Svc.DB)
+			for _, rel := range test.Rels {
+				_, err := cart.CreateUserCartItemRel(
+					context.Background(),
+					i.Svc.DB,
+					rel)
 				require.Nil(t, err)
 			}
 
@@ -157,29 +160,32 @@ func TestPutCartItem(t *testing.T) {
 
 	tests := []struct {
 		Name           string
-		CartItem       cart.CartItem
+		Rel            cart.UserCartItemRel
 		PutRequestBody io.Reader
 	}{
 		{
 			Name:           "Baseline",
-			CartItem:       cart.CartItem{ItemId: 1, UserId: 1, Count: 1},
+			Rel:            cart.UserCartItemRel{ItemId: 1, UserId: 1, Count: 1},
 			PutRequestBody: strings.NewReader(`{"itemId": 1, "userId": 1, "count": 6}`),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			err := test.CartItem.Insert(context.Background(), i.Svc.DB)
+			id, err := cart.CreateUserCartItemRel(
+				context.Background(),
+				i.Svc.DB,
+				test.Rel)
 			require.Nil(t, err)
 
 			var (
-				id = strconv.Itoa(int(test.CartItem.Id))
-				w  = httptest.NewRecorder()
-				r  = httptest.NewRequest(http.MethodPut, "/cart/item/"+id, test.PutRequestBody)
+				idStr = strconv.Itoa(id)
+				w     = httptest.NewRecorder()
+				r     = httptest.NewRequest(http.MethodPut, "/cart/item/"+idStr, test.PutRequestBody)
 			)
 
 			ctx := chi.NewRouteContext()
-			ctx.URLParams.Add("id", id)
+			ctx.URLParams.Add("id", idStr)
 			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, ctx))
 
 			i.Svc.PutCartItemHandler()(w, r)
@@ -203,28 +209,28 @@ func TestDeleteItem(t *testing.T) {
 	defer i.Close(t)
 
 	tests := []struct {
-		Name     string
-		CartItem cart.CartItem
+		Name string
+		Rel  cart.UserCartItemRel
 	}{
 		{
-			Name:     "Baseline",
-			CartItem: cart.CartItem{ItemId: 1, UserId: 1, Count: 1},
+			Name: "Baseline",
+			Rel:  cart.UserCartItemRel{ItemId: 1, UserId: 1, Count: 1},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			err := test.CartItem.Insert(context.Background(), i.Svc.DB)
+			id, err := cart.CreateUserCartItemRel(context.Background(), i.Svc.DB, test.Rel)
 			require.Nil(t, err)
 
 			var (
-				id = strconv.Itoa(int(test.CartItem.Id))
-				w  = httptest.NewRecorder()
-				r  = httptest.NewRequest(http.MethodDelete, "/cart/item/"+id, nil)
+				idStr = strconv.Itoa(id)
+				w     = httptest.NewRecorder()
+				r     = httptest.NewRequest(http.MethodDelete, "/cart/item/"+idStr, nil)
 			)
 
 			ctx := chi.NewRouteContext()
-			ctx.URLParams.Add("id", id)
+			ctx.URLParams.Add("id", idStr)
 			r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, ctx))
 
 			i.Svc.DeleteCartItemHandler()(w, r)

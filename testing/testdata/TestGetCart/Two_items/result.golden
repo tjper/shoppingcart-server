@@ -1,1 +1,1 @@
-{"cart":{"Items":[{"id":1,"itemId":1,"userId":1,"count":1},{"id":2,"itemId":1,"userId":1,"count":1},{"id":3,"itemId":2,"userId":1,"count":1}]}}
+{"cartItems":[{"id":1,"count":1,"item":{"id":1,"name":"Layflat Photo Album","description":"","price":149}},{"id":2,"count":1,"item":{"id":1,"name":"Layflat Photo Album","description":"","price":149}},{"id":3,"count":1,"item":{"id":2,"name":"Hardcover Photo Book","description":"","price":69}}]}

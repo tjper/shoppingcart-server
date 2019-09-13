@@ -3,32 +3,28 @@ package service
 import (
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/rs/cors"
+	"github.com/go-chi/cors"
 )
 
-func defaultMiddleware() []func(http.Handler) http.Handler {
+func defaultMiddleware() chi.Middlewares {
 	var cors = cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodDelete},
-		AllowedHeaders: []string{
-			"Accept",
-			"Authorization",
-			"Content-Type",
-			"X-CSRF-Token"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	})
-	return []func(http.Handler) http.Handler{
-		cors.Handler,
+	return chi.Chain(
 		middleware.RequestID,
 		middleware.RealIP,
 		middleware.Logger,
 		middleware.Recoverer,
 		contentTypeJsonMiddleware,
-	}
+		cors.Handler,
+	)
 }
 
 func contentTypeJsonMiddleware(next http.Handler) http.Handler {

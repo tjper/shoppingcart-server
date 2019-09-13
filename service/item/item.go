@@ -13,10 +13,10 @@ type Queryer interface {
 
 // Item is an item that may be purchased.
 type Item struct {
-	Id          int64
-	Name        string
-	Description string
-	Price       float64
+	Id          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Price       float64 `json:"price"`
 }
 
 // Items retrieves all items from the db.

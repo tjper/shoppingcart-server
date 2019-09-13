@@ -12,20 +12,20 @@ import (
 
 // CartRoutes defines the cart resources REST endpoints.
 func (svc *Service) CartRoutes(r chi.Router) {
-	r.Use(defaultMiddleware()...)
-	r.Post("/cart/item", svc.PostCartItemHandler())
+	// r.Use(defaultMiddleware()...)
+	r.Post("/cart/item", svc.AddCartItemHandler())
 	r.Get("/cart/{userId}", svc.GetCartHandler())
 	r.Put("/cart/item/{id}", svc.PutCartItemHandler())
 	r.Delete("/cart/item/{id}", svc.DeleteCartItemHandler())
 }
 
 // PostCreatItemHandler creates a CartItem resource on the service.
-func (svc *Service) PostCartItemHandler() http.HandlerFunc {
+func (svc *Service) AddCartItemHandler() http.HandlerFunc {
 	type (
 		Request struct {
-			ItemId int64 `json:"itemId"`
-			UserId int64 `json:"userId"`
-			Count  int64 `json:"count"`
+			ItemId int `json:"itemId"`
+			UserId int `json:"userId"`
+			Count  int `json:"count"`
 		}
 		Response struct {
 			CartItem cart.CartItem `json:"cartItem"`
@@ -41,21 +41,51 @@ func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 			return
 		}
 
-		var err error
-		validateInt64(err, "ItemId", req.ItemId)
-		validateInt64(err, "UserId", req.UserId)
-		validateInt64(err, "Count", req.Count)
-		if err != nil {
+		v := new(validate)
+		v.check("ItemId", intNotEmpty(req.ItemId))
+		v.check("UserId", intNotEmpty(req.UserId))
+		v.check("Count", intGreaterThan(req.Count, 0))
+		if err := v.Err; err != nil {
 			svc.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
-		var cartItem = &cart.CartItem{
-			ItemId: req.ItemId,
-			UserId: req.UserId,
-			Count:  req.Count,
+		id, err := cart.UserCartItemRelExists(ctx, svc.DB, req.UserId, req.ItemId)
+		if err != nil {
+			svc.Error(w, err, http.StatusInternalServerError)
+			return
 		}
-		if err := cartItem.Insert(ctx, svc.DB); err != nil {
+		if id != 0 {
+			cartItem, err := cart.FindCartItem(ctx, svc.DB, id)
+			if err != nil {
+				svc.Error(w, err, http.StatusInternalServerError)
+				return
+			}
+			rel := cart.UserCartItemRel{
+				ItemId: req.ItemId,
+				UserId: req.UserId,
+				Count:  cartItem.Count + req.Count,
+			}
+			if err := cart.UpdateUserCartItemRel(ctx, svc.DB, id, rel); err != nil {
+				svc.Error(w, err, http.StatusInternalServerError)
+				return
+			}
+
+		} else {
+			rel := cart.UserCartItemRel{
+				ItemId: req.ItemId,
+				UserId: req.UserId,
+				Count:  req.Count,
+			}
+			id, err = cart.CreateUserCartItemRel(ctx, svc.DB, rel)
+			if err != nil {
+				svc.Error(w, err, http.StatusInternalServerError)
+				return
+			}
+		}
+
+		cartItem, err := cart.FindCartItem(ctx, svc.DB, id)
+		if err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -74,7 +104,7 @@ func (svc *Service) PostCartItemHandler() http.HandlerFunc {
 // GetCartHandler retrieves a user's cart from the service.
 func (svc *Service) GetCartHandler() http.HandlerFunc {
 	type Response struct {
-		Cart cart.Cart `json:"cart"`
+		CartItems []cart.CartItem `json:"cartItems"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -85,14 +115,14 @@ func (svc *Service) GetCartHandler() http.HandlerFunc {
 			svc.Error(w, err, http.StatusBadRequest)
 		}
 
-		var cart = new(cart.Cart)
-		if err := cart.Get(ctx, svc.DB, int64(userId)); err != nil {
+		cartItems, err := cart.CartItems(ctx, svc.DB, userId)
+		if err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		var resp = Response{
-			Cart: *cart,
+			CartItems: cartItems,
 		}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
@@ -104,9 +134,9 @@ func (svc *Service) GetCartHandler() http.HandlerFunc {
 func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 	type (
 		Request struct {
-			ItemId int64 `json:"itemId"`
-			UserId int64 `json:"userId"`
-			Count  int64 `json:"count"`
+			ItemId int `json:"itemId"`
+			UserId int `json:"userId"`
+			Count  int `json:"count"`
 		}
 		Response struct {
 			CartItem cart.CartItem `json:"cartItem"`
@@ -122,11 +152,11 @@ func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 			return
 		}
 
-		var err error
-		validateInt64(err, "ItemId", req.ItemId)
-		validateInt64(err, "UserId", req.UserId)
-		validateInt64(err, "Count", req.Count)
-		if err != nil {
+		v := new(validate)
+		v.check("ItemId", intNotEmpty(req.ItemId))
+		v.check("UserId", intNotEmpty(req.UserId))
+		v.check("Count", intGreaterThan(req.Count, 0))
+		if err := v.Err; err != nil {
 			svc.Error(w, err, http.StatusBadRequest)
 			return
 		}
@@ -136,16 +166,27 @@ func (svc *Service) PutCartItemHandler() http.HandlerFunc {
 			svc.Error(w, err, http.StatusBadRequest)
 		}
 
-		var cartItem = &cart.CartItem{
-			Id:     int64(id),
+		rel := cart.UserCartItemRel{
 			ItemId: req.ItemId,
 			UserId: req.UserId,
 			Count:  req.Count,
 		}
-		if err := cartItem.Update(ctx, svc.DB); err != nil {
+		if err := cart.UpdateUserCartItemRel(ctx, svc.DB, id, rel); err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
 		}
+		cartItem, err := cart.FindCartItem(ctx, svc.DB, id)
+		if err != nil {
+			svc.Error(w, err, http.StatusInternalServerError)
+			return
+		}
+		var resp = Response{
+			CartItem: *cartItem,
+		}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			svc.Error(w, err, http.StatusInternalServerError)
+		}
+
 	}
 }
 
@@ -159,7 +200,7 @@ func (svc *Service) DeleteCartItemHandler() http.HandlerFunc {
 			return
 		}
 
-		if err := cart.DeleteCartItem(ctx, svc.DB, int64(id)); err != nil {
+		if err := cart.DeleteCartItem(ctx, svc.DB, id); err != nil {
 			svc.Error(w, err, http.StatusInternalServerError)
 			return
 		}

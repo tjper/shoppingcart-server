@@ -10,7 +10,7 @@ import (
 
 // ItemRoutes defines the item resource Rest endpoints.
 func (svc *Service) ItemRoutes(r chi.Router) {
-	r.Use(defaultMiddleware()...)
+	// r.Use(defaultMiddleware()...)
 	r.Get("/items", svc.GetItemsHandler())
 }
 

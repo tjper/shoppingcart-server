@@ -92,6 +92,7 @@ func WithZap() ServiceOption {
 // WithRouter returns a ServiceOption that initializes the Service.Router field.
 func WithRouters(routers ...func(chi.Router)) ServiceOption {
 	var r = chi.NewRouter()
+	r.Use(defaultMiddleware()...)
 	return func(svc *Service) {
 		for _, router := range routers {
 			r.Group(router)
@@ -113,7 +114,7 @@ func (svc *Service) ListenAndServe() {
 		<-sigint
 
 		if err := srv.Shutdown(context.Background()); err != nil {
-			svc.Zap.Sugar().Error(errors.Wrap(err, "HTTP server shutdown"))
+			svc.Zap.Error(errors.Wrap(err, "HTTP server shutdown").Error())
 		}
 		close(idleConnsClosed)
 	}()
@@ -122,7 +123,7 @@ func (svc *Service) ListenAndServe() {
 		svc.Viper.GetString(EnvVarHttpPort),
 		svc.Router,
 	); err != http.ErrServerClosed {
-		svc.Zap.Sugar().Fatal(errors.Wrap(err, "HTTP server ListenAndServe"))
+		svc.Zap.Fatal(errors.Wrap(err, "HTTP server ListenAndServe").Error())
 	}
 	<-idleConnsClosed
 }
@@ -135,8 +136,8 @@ func (svc *Service) Close() {
 // Error writes a status code and an optional message to the client. If an
 // internal Server error has occurred, the error is logged.
 func (svc Service) Error(w http.ResponseWriter, err error, code int, message ...string) {
-	if code == http.StatusInternalServerError {
-		svc.Zap.Sugar().Error(err)
-	}
+	// if code == http.StatusInternalServerError {
+	svc.Zap.Error(err.Error())
+	// }
 	http.Error(w, strings.Join(message, "\n"), code)
 }
