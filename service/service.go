@@ -91,8 +91,8 @@ func WithZap() ServiceOption {
 
 // WithRouter returns a ServiceOption that initializes the Service.Router field.
 func WithRouters(routers ...func(chi.Router)) ServiceOption {
+	var r = chi.NewRouter()
 	return func(svc *Service) {
-		var r = chi.NewRouter()
 		for _, router := range routers {
 			r.Group(router)
 		}
@@ -109,7 +109,7 @@ func (svc *Service) ListenAndServe() {
 	)
 	go func() {
 		var sigint = make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 		<-sigint
 
 		if err := srv.Shutdown(context.Background()); err != nil {
